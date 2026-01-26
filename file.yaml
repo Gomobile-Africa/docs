@@ -1,89 +1,168 @@
 openapi: 3.0.0
 paths:
-  /api/auth/login:
+  /api/organization:
     post:
-      operationId: AuthController_login
-      parameters: []
-      responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponseDto'
-        '401':
-          description: Invalid credentials
-      summary: Login with email and password
-      tags:
-        - Auth
-  /api/auth/refresh:
-    post:
-      operationId: AuthController_refresh
+      operationId: OrganizationController_create
       parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RefreshTokenDto'
+              $ref: '#/components/schemas/CreateOrganizationDto'
+      responses:
+        '201':
+          description: Organization created successfully
+        '400':
+          description: Invalid input data
+      summary: Create a new organization
+      tags:
+        - Organizations
+    get:
+      operationId: OrganizationController_getAll
+      parameters:
+        - name: show-soft-deleted
+          required: false
+          in: query
+          description: Include soft-deleted organizations
+          schema:
+            type: boolean
       responses:
         '200':
-          description: ''
-      summary: Refresh tokens
+          description: List of organizations
+      summary: Get all organizations
       tags:
-        - Auth
-  /api/auth/logout:
-    post:
-      operationId: AuthController_logout
-      parameters: []
+        - Organizations
+  /api/organization/{slug}:
+    get:
+      operationId: OrganizationController_getBySlug
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          description: Organization unique slug
+          schema:
+            example: acme-corp
+            type: string
+      responses:
+        '200':
+          description: Organization found
+        '404':
+          description: Organization not found
+      summary: Get organization by slug
+      tags:
+        - Organizations
+    put:
+      operationId: OrganizationController_update
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          description: Organization slug
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LogoutDto'
+              $ref: '#/components/schemas/UpdateOrganizationDto'
       responses:
         '200':
-          description: ''
-      summary: Logout
+          description: Organization updated successfully
+        '404':
+          description: Organization not found
+      summary: Update organization
       tags:
-        - Auth
-  /api/auth/logout-all:
-    post:
-      operationId: AuthController_logoutAll
-      parameters: []
+        - Organizations
+    delete:
+      operationId: OrganizationController_softDelete
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          description: Organization slug
+          schema:
+            type: string
       responses:
         '200':
-          description: ''
-      summary: Logout all sessions
+          description: Organization deleted successfully
+        '404':
+          description: Organization not found
+      summary: Delete organization (soft delete)
       tags:
-        - Auth
-  /api/auth/sessions:
-    post:
-      operationId: AuthController_getUserSessions
-      parameters: []
-      responses:
-        '200':
-          description: ''
-      summary: Get active sessions
-      tags:
-        - Auth
-  /api/auth/revoke-session:
-    post:
-      operationId: AuthController_revokeSession
-      parameters: []
+        - Organizations
+  /api/organization/{slug}/update-ice:
+    put:
+      description: Update WebRTC ICE server configuration
+      operationId: OrganizationController_updateICE
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          description: Organization slug
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RevokeSessionDto'
+              $ref: '#/components/schemas/UpdateIceDto'
       responses:
         '200':
-          description: ''
-      summary: Revoke session
+          description: ICE servers updated successfully
+        '404':
+          description: Organization not found
+      summary: Update organization ICE servers (System admin only)
       tags:
-        - Auth
+        - Organizations
+  /api/organization/{slug}/update-slug:
+    put:
+      description: Change the organization unique identifier
+      operationId: OrganizationController_updateSlug
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          description: Current organization slug
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSlugDto'
+      responses:
+        '200':
+          description: Slug updated successfully
+        '400':
+          description: Slug already exists
+        '404':
+          description: Organization not found
+      summary: Update organization slug (System admin only)
+      tags:
+        - Organizations
+  /api/organization/{slug}/hard-delete:
+    delete:
+      description: Permanently delete organization from database
+      operationId: OrganizationController_hardDelete
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          description: Organization slug
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Organization permanently deleted
+        '404':
+          description: Organization not found
+      summary: Hard delete organization (System admin only)
+      tags:
+        - Organizations
   /api/users/me:
     get:
       operationId: UserController_getMe
@@ -98,6 +177,111 @@ paths:
         '401':
           description: Unauthorized
       summary: Get current user profile with organization
+      tags:
+        - Users
+  /api/users/{id}:
+    get:
+      operationId: UserController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: User UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+        '404':
+          description: User not found
+      summary: Get user by ID (Staff only)
+      tags:
+        - Users
+    put:
+      operationId: UserController_updateUser
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: User UUID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserDto'
+      responses:
+        '200':
+          description: User updated successfully
+        '404':
+          description: User not found
+      summary: Update user (Staff only)
+      tags:
+        - Users
+    delete:
+      operationId: UserController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: User UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deleted successfully
+        '404':
+          description: User not found
+      summary: Delete user (Staff only)
+      tags:
+        - Users
+  /api/users:
+    get:
+      operationId: UserController_findAll
+      parameters: []
+      responses:
+        '200':
+          description: List of all users
+      summary: Get all users (Staff only)
+      tags:
+        - Users
+  /api/users/{id}/verify-email:
+    patch:
+      operationId: UserController_verifyEmail
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: User UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email verified successfully
+        '404':
+          description: User not found
+      summary: Verify user email address (Staff only)
+      tags:
+        - Users
+  /api/users/{id}/hard-delete:
+    delete:
+      description: Permanently delete user from database
+      operationId: UserController_hardDelete
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: User UUID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User permanently deleted
+        '404':
+          description: User not found
+      summary: Hard delete user (Staff only)
       tags:
         - Users
   /api/contact:
@@ -859,6 +1043,289 @@ paths:
       summary: Remove an entry from a dictionary
       tags:
         - Dictionaries
+  /api/admin/dictionaries/system/{language}/entries:
+    post:
+      operationId: DictionaryAdminController_addSystemEntry
+      parameters:
+        - name: language
+          required: true
+          in: path
+          description: Language
+          schema:
+            enum:
+              - ar
+              - fr
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddEntryDto'
+      responses:
+        '201':
+          description: Entry added successfully
+        '404':
+          description: System dictionary not found
+      summary: Add an entry to system dictionary
+      tags:
+        - Admin - Dictionaries
+  /api/auth/register:
+    post:
+      operationId: AuthController_register
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterWithOrganizationDto'
+      responses:
+        '201':
+          description: User and organization created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        '400':
+          description: Invalid input data
+        '409':
+          description: Email or organization slug already exists
+      summary: Register a new user with a new organization
+      tags:
+        - Auth
+  /api/auth/login:
+    post:
+      operationId: AuthController_login
+      parameters: []
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        '401':
+          description: Invalid credentials
+      summary: Login with email and password
+      tags:
+        - Auth
+  /api/auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenDto'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        '401':
+          description: Invalid or expired refresh token
+      summary: Refresh access token using refresh token
+      tags:
+        - Auth
+  /api/auth/logout:
+    post:
+      operationId: AuthController_logout
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutDto'
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponseDto'
+      summary: Logout and invalidate refresh token
+      tags:
+        - Auth
+  /api/auth/logout-all:
+    post:
+      operationId: AuthController_logoutAll
+      parameters: []
+      responses:
+        '200':
+          description: All sessions logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponseDto'
+        '401':
+          description: Unauthorized
+      summary: Logout from all sessions
+      tags:
+        - Auth
+  /api/auth/sessions:
+    post:
+      operationId: AuthController_getUserSessions
+      parameters: []
+      responses:
+        '200':
+          description: List of active sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionsResponseDto'
+        '401':
+          description: Unauthorized
+      summary: Get all active user sessions
+      tags:
+        - Auth
+  /api/auth/revoke-session:
+    post:
+      operationId: AuthController_revokeSession
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeSessionDto'
+      responses:
+        '200':
+          description: Session revoked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponseDto'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Session not found
+      summary: Revoke a specific session
+      tags:
+        - Auth
+  /api/auth/api-keys:
+    post:
+      operationId: ApiKeyController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyDto'
+      responses:
+        '201':
+          description: API key created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyWithSecretDto'
+        '401':
+          description: Unauthorized
+        '409':
+          description: API key already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponseDto'
+      summary: Create a new API key
+      tags:
+        - API Keys
+    get:
+      operationId: ApiKeyController_findAll
+      parameters: []
+      responses:
+        '200':
+          description: API keys found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeysListResponseDto'
+        '401':
+          description: Unauthorized
+        '404':
+          description: API keys not found
+      summary: Get all API keys
+      tags:
+        - API Keys
+  /api/auth/api-keys/{id}:
+    get:
+      operationId: ApiKeyController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: API key found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponseDto'
+        '401':
+          description: Unauthorized
+        '404':
+          description: API key not found
+      summary: Get an API key by ID
+      tags:
+        - API Keys
+    put:
+      operationId: ApiKeyController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateApiKeyDto'
+      responses:
+        '200':
+          description: API key updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponseDto'
+        '401':
+          description: Unauthorized
+        '404':
+          description: API key not found
+      summary: Update an API key
+      tags:
+        - API Keys
+    delete:
+      operationId: ApiKeyController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: API key deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponseDto'
+        '401':
+          description: Unauthorized
+        '404':
+          description: API key not found
+      summary: Delete an API key
+      tags:
+        - API Keys
   /api/audience:
     get:
       operationId: AudienceController_getAll
@@ -1104,23 +1571,625 @@ paths:
       summary: Add contacts to audience
       tags:
         - Audiences
+  /api/credits/balance:
+    get:
+      operationId: CreditController_getBalance
+      parameters: []
+      responses:
+        '200':
+          description: Credit balance retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBalanceResponseDto'
+        '401':
+          description: Unauthorized
+      security:
+        - bearer: []
+      summary: Get credit balance for current organization
+      tags:
+        - Credits
+  /api/credits/transactions:
+    get:
+      operationId: CreditController_getTransactions
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: Page number (1-based)
+          schema:
+            minimum: 1
+            default: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          description: Number of items per page
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+            type: number
+        - name: startDate
+          required: false
+          in: query
+          description: Filter from date (ISO string)
+          schema:
+            type: string
+        - name: endDate
+          required: false
+          in: query
+          description: Filter to date (ISO string)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction history retrieved
+        '401':
+          description: Unauthorized
+      security:
+        - bearer: []
+      summary: Get credit transaction history for current organization
+      tags:
+        - Credits
+  /api/admin/credits/{organizationId}/add:
+    post:
+      operationId: CreditAdminController_addCredits
+      parameters:
+        - name: organizationId
+          required: true
+          in: path
+          description: Organization UUID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCreditsDto'
+      responses:
+        '200':
+          description: Credits added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddCreditsResponseDto'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Organization not found
+      security:
+        - bearer: []
+      summary: Add credits to organization (staff only)
+      tags:
+        - Admin - Credits
+  /api/admin/credits/{organizationId}/balance:
+    get:
+      operationId: CreditAdminController_getBalance
+      parameters:
+        - name: organizationId
+          required: true
+          in: path
+          description: Organization UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Credit balance retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBalanceResponseDto'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Organization not found
+      security:
+        - bearer: []
+      summary: Get organization credit balance (staff only)
+      tags:
+        - Admin - Credits
+  /api/admin/credits/{organizationId}/transactions:
+    get:
+      operationId: CreditAdminController_getTransactions
+      parameters:
+        - name: organizationId
+          required: true
+          in: path
+          description: Organization UUID
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: Page number (1-based)
+          schema:
+            minimum: 1
+            default: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          description: Number of items per page
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+            type: number
+        - name: startDate
+          required: false
+          in: query
+          description: Filter from date (ISO string)
+          schema:
+            type: string
+        - name: endDate
+          required: false
+          in: query
+          description: Filter to date (ISO string)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction history retrieved
+        '401':
+          description: Unauthorized
+        '404':
+          description: Organization not found
+      security:
+        - bearer: []
+      summary: Get credit transaction history (staff only)
+      tags:
+        - Admin - Credits
+  /api/sms-programs:
+    get:
+      description: List SMS programs with pagination, search, and status filter.
+      operationId: SmsProgramController_findAll
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: Page number (1-based)
+          schema:
+            minimum: 1
+            default: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          description: Number of items per page
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+            type: number
+        - name: search
+          required: false
+          in: query
+          description: Search term to filter results
+          schema:
+            maxLength: 100
+            example: john
+            type: string
+        - name: sortBy
+          required: false
+          in: query
+          description: Field to sort by
+          schema:
+            example: createdAt
+            type: string
+        - name: sortOrder
+          required: false
+          in: query
+          description: Sort order
+          schema:
+            default: desc
+            example: desc
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SmsProgramResponseDto'
+      summary: Get all SMS programs for organization
+      tags:
+        - SMS Programs
+    post:
+      description: Creates a new SMS program in draft status.
+      operationId: SmsProgramController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSmsProgramDto'
+      responses:
+        '201':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmsProgramResponseDto'
+        '400':
+          description: Invalid input data
+      summary: Create a new SMS program
+      tags:
+        - SMS Programs
+  /api/sms-programs/{id}:
+    get:
+      description: Returns program details including current progress.
+      operationId: SmsProgramController_findById
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: SMS Program UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmsProgramWithProgressResponseDto'
+        '404':
+          description: SMS Program not found
+      summary: Get SMS program by ID
+      tags:
+        - SMS Programs
+    put:
+      description: Update program details. Only allowed when status is draft.
+      operationId: SmsProgramController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: SMS Program UUID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSmsProgramDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmsProgramResponseDto'
+        '400':
+          description: Cannot update - invalid status
+        '404':
+          description: SMS Program not found
+      summary: Update SMS program
+      tags:
+        - SMS Programs
+    delete:
+      description: Delete program. Only allowed when status is draft.
+      operationId: SmsProgramController_delete
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: SMS Program UUID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Program deleted
+        '400':
+          description: Cannot delete - invalid status
+        '404':
+          description: SMS Program not found
+      summary: Delete SMS program
+      tags:
+        - SMS Programs
+  /api/sms-programs/{id}/launch:
+    post:
+      description: >-
+        Start sending SMS to audience contacts. Transitions from draft to
+        pending/sending.
+      operationId: SmsProgramController_launch
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: SMS Program UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LaunchSmsProgramResponseDto'
+        '400':
+          description: Cannot launch - invalid status or no contacts
+        '404':
+          description: SMS Program not found
+      summary: Launch SMS program
+      tags:
+        - SMS Programs
+  /api/sms-programs/{id}/cancel:
+    post:
+      description: >-
+        Cancel a running or pending SMS campaign. Best-effort - some messages
+        may still be sent.
+      operationId: SmsProgramController_cancel
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: SMS Program UUID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmsProgramWithProgressResponseDto'
+        '400':
+          description: Cannot cancel - invalid status
+        '404':
+          description: SMS Program not found
+      summary: Cancel SMS program
+      tags:
+        - SMS Programs
+  /api/contact/ingestion/upload:
+    post:
+      description: >-
+        Parses the file and creates an ingestion session. Returns session ID and
+        file metadata.
+      operationId: IngestionController_upload
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadOptionsDto'
+      responses:
+        '201':
+          description: File uploaded and parsed successfully
+        '400':
+          description: Invalid file format or empty file
+      summary: Upload a CSV or Excel file for contact ingestion
+      tags:
+        - Contact Ingestion
+  /api/contact/ingestion/validate:
+    post:
+      description: >-
+        Applies column mappings to the uploaded data and validates each row.
+        Returns validation results with errors.
+      operationId: IngestionController_validate
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateRequestDto'
+      responses:
+        '200':
+          description: Validation completed
+        '400':
+          description: Invalid session or column mappings
+        '404':
+          description: Session not found or expired
+      summary: Validate uploaded data with column mappings
+      tags:
+        - Contact Ingestion
+  /api/contact/ingestion/validate/{sessionId}:
+    get:
+      description: >-
+        Retrieves validation results for a session with pagination and
+        filtering.
+      operationId: IngestionController_getValidationResults
+      parameters:
+        - name: sessionId
+          required: true
+          in: path
+          description: Session ID from upload
+          schema:
+            format: uuid
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: Page number
+          schema:
+            default: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          description: 'Items per page (max: 500)'
+          schema:
+            default: 50
+            type: number
+        - name: filter
+          required: false
+          in: query
+          description: Filter rows by validation status
+          schema:
+            default: all
+            type: string
+            enum:
+              - all
+              - valid
+              - invalid
+              - existing
+      responses:
+        '200':
+          description: Validation results
+        '404':
+          description: Session not found or expired
+      summary: Get paginated validation results
+      tags:
+        - Contact Ingestion
+  /api/contact/ingestion/execute:
+    post:
+      description: >-
+        Imports valid contacts from the validated session. Returns import
+        statistics and URL to download failed rows CSV.
+      operationId: IngestionController_execute
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteRequestDto'
+      responses:
+        '200':
+          description: Import completed
+        '400':
+          description: Validation not completed
+        '404':
+          description: Session not found or expired
+      summary: Execute the contact import
+      tags:
+        - Contact Ingestion
+  /api/call-domain/test-dial:
+    post:
+      description: Makes an outbound test call with AMD detection
+      operationId: CallDomainController_testDial
+      parameters: []
+      responses:
+        '200':
+          description: Call completed with test results
+        '401':
+          description: Unauthorized
+      security:
+        - bearer: []
+      summary: Test outbound dial (Staff only)
+      tags:
+        - Call Domain - Test Endpoints
+  /api/call-domain/test-inbound:
+    post:
+      description: >-
+        Waits for an incoming call, answers it, waits a few seconds, then hangs
+        up
+      operationId: CallDomainController_testInbound
+      parameters: []
+      responses:
+        '200':
+          description: Inbound call handled
+        '401':
+          description: Unauthorized
+      security:
+        - bearer: []
+      summary: Test inbound call handling (Staff only)
+      tags:
+        - Call Domain - Test Endpoints
+  /api/call-domain/test-dtmf:
+    post:
+      description: Makes an outbound call and collects DTMF digits from the recipient
+      operationId: CallDomainController_testDtmf
+      parameters: []
+      responses:
+        '200':
+          description: DTMF digits collected
+        '401':
+          description: Unauthorized
+      security:
+        - bearer: []
+      summary: Test DTMF collection (Staff only)
+      tags:
+        - Call Domain - Test Endpoints
+  /api/call-domain/test-play:
+    post:
+      description: Makes an outbound call and plays an audio file via AudioSocket streaming
+      operationId: CallDomainController_testPlay
+      parameters: []
+      responses:
+        '200':
+          description: Audio playback completed
+        '401':
+          description: Unauthorized
+      security:
+        - bearer: []
+      summary: Test audio playback (Staff only)
+      tags:
+        - Call Domain - Test Endpoints
+  /api/call-domain/test-record:
+    post:
+      description: >-
+        Makes an outbound call, records audio, and saves to file (WAV format,
+        8kHz, 16-bit, mono)
+      operationId: CallDomainController_testRecord
+      parameters: []
+      responses:
+        '200':
+          description: Recording completed and saved
+        '401':
+          description: Unauthorized
+      security:
+        - bearer: []
+      summary: Test audio recording (Staff only)
+      tags:
+        - Call Domain - Test Endpoints
+  /api/call-domain/test-flow:
+    post:
+      description: 'Executes a basic flow: DIAL → PLAY → HANGUP'
+      operationId: CallDomainController_testFlow
+      parameters: []
+      responses:
+        '200':
+          description: Flow execution completed
+        '401':
+          description: Unauthorized
+      security:
+        - bearer: []
+      summary: Test flow execution (Staff only)
+      tags:
+        - Call Domain - Test Endpoints
   /api/flows:
     post:
       operationId: FlowController_createFlow
       parameters: []
       responses:
         '201':
-          description: ''
+          description: Flow created successfully
+        '400':
+          description: Invalid flow definition
+      security:
+        - bearer: []
+      summary: Create a new flow
       tags:
-        - Flow
+        - Call Flows
     get:
       operationId: FlowController_getFlowsByOrganization
       parameters: []
       responses:
         '200':
-          description: ''
+          description: List of flows
+      security:
+        - bearer: []
+      summary: Get all flows for current organization
       tags:
-        - Flow
+        - Call Flows
   /api/flows/{flowId}:
     put:
       operationId: FlowController_updateFlow
@@ -1128,39 +2197,57 @@ paths:
         - name: flowId
           required: true
           in: path
+          description: Flow UUID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Flow updated successfully
+        '404':
+          description: Flow not found
+      security:
+        - bearer: []
+      summary: Update an existing flow
       tags:
-        - Flow
+        - Call Flows
     get:
       operationId: FlowController_getFlow
       parameters:
         - name: flowId
           required: true
           in: path
+          description: Flow UUID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Flow found
+        '404':
+          description: Flow not found
+      security:
+        - bearer: []
+      summary: Get flow by ID
       tags:
-        - Flow
+        - Call Flows
     delete:
       operationId: FlowController_deleteFlow
       parameters:
         - name: flowId
           required: true
           in: path
+          description: Flow UUID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Flow deleted successfully
+        '404':
+          description: Flow not found
+      security:
+        - bearer: []
+      summary: Delete a flow (soft delete)
       tags:
-        - Flow
+        - Call Flows
   /api/flows/latest/{name}:
     get:
       operationId: FlowController_getLatestVersion
@@ -1168,13 +2255,19 @@ paths:
         - name: name
           required: true
           in: path
+          description: Flow name
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Latest flow version
+        '404':
+          description: Flow not found
+      security:
+        - bearer: []
+      summary: Get latest version of a flow by name
       tags:
-        - Flow
+        - Call Flows
   /api/flows/{flowId}/permanent:
     delete:
       operationId: FlowController_permanentlyDeleteFlow
@@ -1182,24 +2275,37 @@ paths:
         - name: flowId
           required: true
           in: path
+          description: Flow UUID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Flow permanently deleted
+        '404':
+          description: Flow not found
+      security:
+        - bearer: []
+      summary: Permanently delete a flow (Staff only)
       tags:
-        - Flow
+        - Call Flows
   /api/flows/validate:
     post:
+      description: Validates flow definition and returns validation results
       operationId: FlowController_validateFlow
       parameters: []
       responses:
-        '201':
-          description: ''
+        '200':
+          description: Validation results
+        '400':
+          description: Invalid flow definition
+      security:
+        - bearer: []
+      summary: Validate a flow without saving
       tags:
-        - Flow
+        - Call Flows
   /api/flows/execute:
     post:
+      description: Creates an outbound call session and executes the flow
       operationId: FlowController_executeFlow
       parameters: []
       requestBody:
@@ -1209,12 +2315,22 @@ paths:
             schema:
               $ref: '#/components/schemas/ExecuteFlowRequestDto'
       responses:
-        '201':
-          description: ''
+        '200':
+          description: Flow execution result
+        '403':
+          description: Flow does not belong to organization
+        '404':
+          description: Flow or contact not found
+      security:
+        - bearer: []
+      summary: Execute a flow (Staff only)
       tags:
-        - Flow
+        - Call Flows
   /api/call-requests:
     post:
+      description: >-
+        Queue a call request for immediate or scheduled execution. Phone number
+        is fetched from contact.primaryPhone.
       operationId: CallRequestController_requestCall
       parameters: []
       requestBody:
@@ -1225,9 +2341,16 @@ paths:
               $ref: '#/components/schemas/RequestCallDto'
       responses:
         '202':
-          description: ''
+          description: Call request accepted and queued
+        '400':
+          description: Invalid request data
+        '402':
+          description: Insufficient credits
+      security:
+        - bearer: []
+      summary: Request an ad-hoc call
       tags:
-        - CallRequest
+        - Call Requests
   /api/call-requests/{jobId}:
     delete:
       operationId: CallRequestController_cancelCall
@@ -1235,13 +2358,19 @@ paths:
         - name: jobId
           required: true
           in: path
+          description: Job ID to cancel
           schema:
             type: string
       responses:
         '204':
-          description: ''
+          description: Call cancelled successfully
+        '404':
+          description: Job not found
+      security:
+        - bearer: []
+      summary: Cancel a queued call
       tags:
-        - CallRequest
+        - Call Requests
   /api/programs:
     post:
       operationId: ProgramController_createProgram
@@ -1262,7 +2391,7 @@ paths:
         '400':
           description: Invalid request
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: Create a new program
       tags:
         - Programs
@@ -1279,7 +2408,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/ProgramResponseDto'
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: List all programs for the organization
       tags:
         - Programs
@@ -1303,7 +2432,7 @@ paths:
         '404':
           description: Program not found
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: Get program details
       tags:
         - Programs
@@ -1326,7 +2455,7 @@ paths:
         '404':
           description: Program not found
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: Update a program
       tags:
         - Programs
@@ -1345,7 +2474,7 @@ paths:
         '404':
           description: Program not found
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: Delete a program
       tags:
         - Programs
@@ -1365,7 +2494,7 @@ paths:
         '404':
           description: Program not found
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: Launch a program execution
       tags:
         - Programs
@@ -1391,7 +2520,7 @@ paths:
         '404':
           description: Program not found
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: List all executions for a program
       tags:
         - Programs
@@ -1409,7 +2538,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/ExecutionResponseDto'
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: List all executions for the organization
       tags:
         - Program Executions
@@ -1433,7 +2562,7 @@ paths:
         '404':
           description: Execution not found
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: Get execution details
       tags:
         - Program Executions
@@ -1452,7 +2581,7 @@ paths:
         '404':
           description: Execution not found
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: Cancel an execution
       tags:
         - Program Executions
@@ -1478,7 +2607,7 @@ paths:
         '404':
           description: Execution not found
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: Pause a running execution
       tags:
         - Program Executions
@@ -1504,59 +2633,86 @@ paths:
         '404':
           description: Execution not found
       security:
-        - ApiKeyAuth: []
+        - bearer: []
       summary: Resume a paused execution
       tags:
         - Program Executions
   /api/call-report/call/{callId}:
     get:
+      description: >-
+        Returns detailed report for a single call including events and flow
+        execution details
       operationId: CallReportController_getCallReport
       parameters:
         - name: callId
           required: true
           in: path
+          description: Call ID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Call attempt report
+        '404':
+          description: Call not found
+      security:
+        - bearer: []
+      summary: Get single call report by callId
       tags:
-        - CallReport
+        - Call Reports
   /api/call-report/{jobId}:
     get:
+      description: >-
+        Returns full report including all call attempts, events, and flow
+        execution details
       operationId: CallReportController_getJobReport
       parameters:
         - name: jobId
           required: true
           in: path
+          description: Job ID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Job report with all call attempts
+        '404':
+          description: Job not found
+      security:
+        - bearer: []
+      summary: Get job report by jobId
       tags:
-        - CallReport
+        - Call Reports
   /api/program-execution/{executionId}/report:
     get:
+      description: Returns comprehensive report for a program execution
       operationId: ProgramReportController_getReport
       parameters:
         - name: executionId
           required: true
           in: path
+          description: Program Execution UUID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Program execution report
+        '404':
+          description: Execution not found
+      security:
+        - bearer: []
+      summary: Get main program execution report
       tags:
-        - ProgramReport
+        - Program Execution Reports
   /api/program-execution/{executionId}/report/calls:
     get:
+      description: Returns paginated list of calls for a program execution
       operationId: ProgramReportController_getCallHistory
       parameters:
         - name: executionId
           required: true
           in: path
+          description: Program Execution UUID
           schema:
             type: string
         - name: page
@@ -1580,51 +2736,81 @@ paths:
             type: number
       responses:
         '200':
-          description: ''
+          description: Paginated call history
+        '404':
+          description: Execution not found
+      security:
+        - bearer: []
+      summary: Get paginated call history
       tags:
-        - ProgramReport
+        - Program Execution Reports
   /api/program-execution/{executionId}/report/breakdown:
     get:
+      description: Returns event breakdown statistics for the program execution
       operationId: ProgramReportController_getBreakdown
       parameters:
         - name: executionId
           required: true
           in: path
+          description: Program Execution UUID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Event breakdown response
+        '404':
+          description: Execution not found
+      security:
+        - bearer: []
+      summary: Get event breakdown per attempt
       tags:
-        - ProgramReport
+        - Program Execution Reports
   /api/program-execution/{executionId}/report/node-stats:
     get:
+      description: >-
+        Returns unique calls per node and total executions (not a funnel - flows
+        are directed graphs)
       operationId: ProgramReportController_getNodeStats
       parameters:
         - name: executionId
           required: true
           in: path
+          description: Program Execution UUID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Node execution statistics
+        '404':
+          description: Execution not found
+      security:
+        - bearer: []
+      summary: Get node execution statistics
       tags:
-        - ProgramReport
+        - Program Execution Reports
   /api/program-execution/{executionId}/report/billing:
     get:
+      description: >-
+        Returns billing summary, cost breakdown by node type, and top 10 most
+        expensive calls
       operationId: ProgramReportController_getBillingReport
       parameters:
         - name: executionId
           required: true
           in: path
+          description: Program Execution UUID
           schema:
             type: string
       responses:
         '200':
-          description: ''
+          description: Program billing report
+        '404':
+          description: Execution not found
+      security:
+        - bearer: []
+      summary: Get detailed billing report
       tags:
-        - ProgramReport
+        - Program Execution Reports
 info:
   title: GoMobile Backend API
   description: >-
@@ -1652,11 +2838,10 @@ servers:
     description: Local Development
 components:
   securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: x-api-key
-      description: API key for authentication
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
   schemas:
     CreateOrganizationDto:
       type: object
@@ -2414,6 +3599,12 @@ components:
     LogoutDto:
       type: object
       properties: {}
+    MessageResponseDto:
+      type: object
+      properties: {}
+    SessionsResponseDto:
+      type: object
+      properties: {}
     RevokeSessionDto:
       type: object
       properties: {}
@@ -2421,9 +3612,6 @@ components:
       type: object
       properties: {}
     ApiKeyWithSecretDto:
-      type: object
-      properties: {}
-    MessageResponseDto:
       type: object
       properties: {}
     ApiKeysListResponseDto:
@@ -2526,6 +3714,14 @@ components:
         description:
           type: string
           example: Updated description
+    GetBalanceResponseDto:
+      type: object
+      properties:
+        balance:
+          type: number
+          description: Current credit balance
+      required:
+        - balance
     AddCreditsDto:
       type: object
       properties:
@@ -2538,6 +3734,14 @@ components:
           description: Optional description
       required:
         - amount
+    AddCreditsResponseDto:
+      type: object
+      properties:
+        newBalance:
+          type: number
+          description: New balance after adding credits
+      required:
+        - newBalance
     SmsProgramResponseDto:
       type: object
       properties: {}
@@ -2566,6 +3770,10 @@ components:
           type: boolean
           description: 'Whether the first row is a header row (default: false)'
           default: false
+        audienceId:
+          type: string
+          description: Optional audience ID to link imported contacts to
+          format: uuid
     ColumnMappingDto:
       type: object
       properties:
@@ -2714,11 +3922,20 @@ components:
         retryStrategy:
           type: object
           description: Retry strategy for failed calls
-          additionalProperties: true
-          example:
-            type: fixed_delay
-            delayMinutes: 30
-            maxRetries: 2
+          examples:
+            none:
+              value:
+                type: none
+            fixed_delay:
+              value:
+                type: fixed_delay
+                delayMinutes: 30
+                maxRetries: 2
+            scheduled:
+              value:
+                type: scheduled
+                retryDates:
+                  - '2025-12-17T14:00:00Z'
         pauseWindows:
           $ref: '#/components/schemas/PauseWindowsDto'
       required:
@@ -2767,10 +3984,8 @@ components:
         retryStrategy:
           type: object
           description: Retry strategy
-          additionalProperties: true
         pauseWindows:
           type: object
-          additionalProperties: true
           description: Pause windows
         createdAt:
           type: string
